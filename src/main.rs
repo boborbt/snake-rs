@@ -54,7 +54,8 @@ const GAME_OVER_SCREEN:[&str;5] =  ["+--------------------------------+" ,
 struct InfoPanel {
     score: u64,
     speed: u64,
-    field: (u16, u16)
+    field: (u16, u16),
+    char: u8
 }
 
 impl<W:Write> Renderable<W> for InfoPanel {
@@ -63,7 +64,7 @@ impl<W:Write> Renderable<W> for InfoPanel {
         let row = self.field.1 + 1;
         write!(stdout, "{}+{}+", cursor::Goto(1, row), dashes).unwrap();
         let row = row + 1;
-        write!(stdout, "{}| {}Score{}: {} {}Speed{}: {}{}|", 
+        write!(stdout, "{}| {}Score{}: {} {}Speed{}: {} char: {}{}|", 
                 cursor::Goto(1, row), 
                 color::Fg(color::Yellow),
                 color::Fg(color::Reset),
@@ -71,6 +72,7 @@ impl<W:Write> Renderable<W> for InfoPanel {
                 color::Fg(color::Yellow),
                 color::Fg(color::Reset),
                 self.speed,
+                self.char,
                 cursor::Goto(self.field.0+2, row)
             ).unwrap();
         let row = row + 1;
@@ -140,7 +142,8 @@ struct App<R, W> {
     speed: u64,
     field: (u16, u16),
     score: u64,
-    game_over: bool
+    game_over: bool,
+    char: u8
 }
 
 impl<R: Read, W: Write>  App<R, W> {
@@ -153,7 +156,8 @@ impl<R: Read, W: Write>  App<R, W> {
             speed: 10,
             field: (80, 25),
             score: 0,
-            game_over: false
+            game_over: false,
+            char: ' ' as u8
         }
     }
 
@@ -162,7 +166,7 @@ impl<R: Read, W: Write>  App<R, W> {
         self.apple.render(&mut self.stdout);
         self.snake.render(&mut self.stdout);
 
-        let info_panel = InfoPanel { score: self.score, speed: self.speed, field: self.field };
+        let info_panel = InfoPanel { score: self.score, speed: self.speed, field: self.field, char: self.char };
         info_panel.render(&mut self.stdout);
 
         self.stdout.flush().unwrap();
@@ -195,7 +199,23 @@ impl<R: Read, W: Write>  App<R, W> {
             let mut key_bytes = [0];
             self.stdin.read(&mut key_bytes).unwrap();
 
+            if key_bytes[0] != 0 {
+                self.char = key_bytes[0];
+            }
+
             match key_bytes[0] {
+                27 => {
+                    self.stdin.read(&mut key_bytes).unwrap();
+                    self.stdin.read(&mut key_bytes).unwrap();
+                    self.char = key_bytes[0];
+                    match key_bytes[0] {
+                        65 => self.snake.dir = (0, -1),
+                        66 => self.snake.dir = (0, 1),
+                        67 => self.snake.dir = (1, 0),
+                        68 => self.snake.dir = (-1, 0),
+                        _ => {}
+                    }
+                }
                 b'q' => break,
                 b'w' => self.snake.dir = (0, -1),
                 b'a' => self.snake.dir = (-1, 0),
