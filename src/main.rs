@@ -3,7 +3,8 @@ use termion::{
     clear,
     cursor,
     color,
-    async_stdin
+    async_stdin,
+    terminal_size
 };
 
 use std::{
@@ -18,14 +19,26 @@ trait Renderable<W: Write> {
     fn render(&self, stdout: &mut W);
 }
 
+enum AppleTypes {
+    Red,
+    Yellow
+}
+
 struct Apple {
     x: u16,
-    y: u16
+    y: u16,
+    points: u64,
+    inc_speed: u64,
+    apple_type: AppleTypes
 }
+
 
 impl<W:Write> Renderable<W> for Apple {
     fn render(&self, stdout: &mut W) {
-        write!(stdout, "{}{}●{}", cursor::Goto(self.x,self.y), color::Fg(color::Red), color::Fg(color::Reset)).unwrap();
+        match self.apple_type {
+            AppleTypes::Red => write!(stdout, "{}{}●{}", cursor::Goto(self.x,self.y), color::Fg(color::Red), color::Fg(color::Reset)).unwrap(),
+            AppleTypes::Yellow => write!(stdout, "{}{}●{}", cursor::Goto(self.x,self.y), color::Fg(color::Yellow), color::Fg(color::Reset)).unwrap()
+        }
     }
 }
 
@@ -135,7 +148,8 @@ impl<W: Write> Renderable<W> for Snake {
     }
 }
 struct App<R, W> {
-    apple: Apple,
+    red_apple: Apple,
+    yellow_apple: Apple,
     snake: Snake,
     stdin: R,
     stdout: W,
@@ -148,13 +162,16 @@ struct App<R, W> {
 
 impl<R: Read, W: Write>  App<R, W> {
     fn new(stdin: R, stdout: W) -> App<R,W> {
+        let size = terminal_size().unwrap();
+        let size = (size.0 - 2, size.1 - 4);
         App {
-            apple: Apple { x:5, y:5 },
+            red_apple: Apple { x:5, y:5, points: 1, inc_speed: 1, apple_type: AppleTypes::Red },
+            yellow_apple: Apple { x:10, y:10, points: 2, inc_speed: 2, apple_type: AppleTypes::Yellow },
             snake: Snake { body: vec![(3,1),(2,1),(1,1)], dir: (1,0) },
             stdin: stdin,
             stdout: stdout,
             speed: 10,
-            field: (80, 25),
+            field: size,
             score: 0,
             game_over: false,
             char: ' ' as u8
@@ -163,7 +180,8 @@ impl<R: Read, W: Write>  App<R, W> {
 
     fn render(&mut self) {
         write!(self.stdout, "{}", clear::All).unwrap();
-        self.apple.render(&mut self.stdout);
+        self.red_apple.render(&mut self.stdout);
+        self.yellow_apple.render(&mut self.stdout);
         self.snake.render(&mut self.stdout);
 
         let info_panel = InfoPanel { score: self.score, speed: self.speed, field: self.field, char: self.char };
@@ -174,14 +192,24 @@ impl<R: Read, W: Write>  App<R, W> {
 
     fn check_collision(&mut self) {
         let head_pos = self.snake.head_pos();
+        let mut apple_eaten = false;
 
-        if head_pos.0 == self.apple.x && head_pos.1 == self.apple.y {
-            self.snake.grow();
-            self.speed += 1;
-            self.score += 1;
-            self.apple.x = rand::random::<u16>() % self.field.0 + 1;
-            self.apple.y = rand::random::<u16>() % self.field.1 + 1;
+        for apple in [&mut self.red_apple, &mut self.yellow_apple].iter() {
+            if head_pos.0 == apple.x && head_pos.1 == apple.y {
+                self.snake.grow();
+                self.speed += apple.inc_speed;
+                self.score += apple.points;
+                apple_eaten = true;
+            }
         }
+
+        if apple_eaten {
+            self.red_apple.x = rand::random::<u16>() % self.field.0 + 1;
+            self.red_apple.y = rand::random::<u16>() % self.field.1 + 1;
+            self.yellow_apple.x = rand::random::<u16>() % self.field.0 + 1;
+            self.yellow_apple.y = rand::random::<u16>() % self.field.1 + 1;
+        }
+
 
         for (x,y) in &self.snake.body[1..] {
             if head_pos.0 == *x && head_pos.1 == *y {
@@ -224,7 +252,12 @@ impl<R: Read, W: Write>  App<R, W> {
                 _ => {}
             }
 
-            let interval = 1000 / self.speed;
+            let mut speed = self.speed;
+            if self.snake.dir.1 != 0 {
+                speed = (speed as f32 / 1.6) as u64;
+            }
+
+            let interval = 1000 / speed;
             let now = Instant::now();
             let dt = (now.duration_since(before).subsec_nanos() / 1_000_000) as u64;
 
