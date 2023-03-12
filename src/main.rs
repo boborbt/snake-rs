@@ -19,33 +19,42 @@ trait Renderable {
     fn render<W: Write>(&self, stdout: &mut W);
 }
 
-#[derive(Copy, Clone)]
-enum AppleTypes {
+#[derive(Clone)]
+enum AppleType {
     Red,
     Yellow
 }
 
-#[derive(Copy, Clone)]
+enum Command {
+    Up,
+    Down,
+    Left,
+    Right,
+    Quit,
+    None
+}
+
+#[derive(Clone)]
 struct Apple {
     x: u16,
     y: u16,
     points: u64,
     inc_speed: u64,
-    apple_type: AppleTypes
+    apple_type: AppleType
 }
 
 
 impl Renderable for Apple {
     fn render<W:Write>(&self, stdout: &mut W) {
         match self.apple_type {
-            AppleTypes::Red => write!(stdout, "{}{}●{}", cursor::Goto(self.x,self.y), color::Fg(color::Red), color::Fg(color::Reset)).unwrap(),
-            AppleTypes::Yellow => write!(stdout, "{}{}●{}", cursor::Goto(self.x,self.y), color::Fg(color::Yellow), color::Fg(color::Reset)).unwrap()
+            AppleType::Red => write!(stdout, "{}{}●{}", cursor::Goto(self.x,self.y), color::Fg(color::Red), color::Fg(color::Reset)).unwrap(),
+            AppleType::Yellow => write!(stdout, "{}{}●{}", cursor::Goto(self.x,self.y), color::Fg(color::Yellow), color::Fg(color::Reset)).unwrap()
         }
     }
 }
 
 impl Apple {
-    fn new(field: &(u16, u16), points:u64, speed:u64, apple_type: AppleTypes) -> Apple {
+    fn new(field: &(u16, u16), points:u64, speed:u64, apple_type: AppleType) -> Apple {
         let x: u16 = rand::random::<u16>() % field.0 + 1;
         let y: u16 = rand::random::<u16>() % field.1 + 1;
 
@@ -80,12 +89,11 @@ const GAME_OVER_SCREEN:[&str;5] =  ["+--------------------------------+" ,
                                     "|                                |" ,
                                     "+--------------------------------+"];
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 struct InfoPanel {
     score: u64,
     speed: u64,
-    field: (u16, u16),
-    char: u8
+    field: (u16, u16)
 }
 
 impl Renderable for InfoPanel {
@@ -94,7 +102,7 @@ impl Renderable for InfoPanel {
         let row = self.field.1 + 1;
         write!(stdout, "{}+{}+", cursor::Goto(1, row), dashes).unwrap();
         let row = row + 1;
-        write!(stdout, "{}| {}Score{}: {} {}Speed{}: {} char: {}{}|", 
+        write!(stdout, "{}| {}Score{}: {} {}Speed{}: {}{}|", 
                 cursor::Goto(1, row), 
                 color::Fg(color::Yellow),
                 color::Fg(color::Reset),
@@ -102,7 +110,6 @@ impl Renderable for InfoPanel {
                 color::Fg(color::Yellow),
                 color::Fg(color::Reset),
                 self.speed,
-                self.char,
                 cursor::Goto(self.field.0+2, row)
             ).unwrap();
         let row = row + 1;
@@ -180,20 +187,18 @@ struct App {
     field: (u16, u16),
     score: u64,
     game_over: bool,
-    char: u8
 }
 
 impl App {
     fn new() -> App {
         let result = App {
-            red_apple: Apple { x:5, y:5, points: 1, inc_speed: 1, apple_type: AppleTypes::Red },
-            yellow_apple: Apple { x:10, y:10, points: 2, inc_speed: 2, apple_type: AppleTypes::Yellow },
+            red_apple: Apple { x:5, y:5, points: 1, inc_speed: 1, apple_type: AppleType::Red },
+            yellow_apple: Apple { x:10, y:10, points: 2, inc_speed: 2, apple_type: AppleType::Yellow },
             snake: Snake { body: vec![(3,1),(2,1),(1,1)], dir: (1,0) },
             speed: 10,
             field: (80,25),
             score: 0,
             game_over: false,
-            char: ' ' as u8
         };
 
         result.update_field_size()
@@ -214,7 +219,7 @@ impl App {
         self.yellow_apple.render(stdout);
         self.snake.render(stdout);
 
-        let info_panel = InfoPanel { score: self.score, speed: self.speed, field: self.field, char: self.char };
+        let info_panel = InfoPanel { score: self.score, speed: self.speed, field: self.field };
         info_panel.render(stdout);
 
         stdout.flush().unwrap();
@@ -225,7 +230,7 @@ impl App {
         let head_pos = self.snake.head_pos();
         let mut apple_eaten = false;
 
-        for apple in [self.red_apple,self.yellow_apple].iter() {
+        for apple in [&self.red_apple,&self.yellow_apple].iter() {
             if head_pos.0 == apple.x && head_pos.1 == apple.y {
                 result.snake = self.snake.grow();
                 result.speed += apple.inc_speed;
@@ -235,8 +240,8 @@ impl App {
         }
 
         if apple_eaten {
-            result.red_apple = Apple::new(&self.field, 1, 1, AppleTypes::Red);
-            result.yellow_apple = Apple::new(&self.field, 2, 2, AppleTypes::Yellow);
+            result.red_apple = Apple::new(&self.field, 1, 1, AppleType::Red);
+            result.yellow_apple = Apple::new(&self.field, 2, 2, AppleType::Yellow);
         }
 
 
@@ -249,6 +254,32 @@ impl App {
         result
     }
 
+    fn get_cmd(stdin: &mut AsyncReader) -> Command {
+            let mut key_bytes = [0];
+            stdin.read(&mut key_bytes).unwrap();
+
+            match key_bytes[0] {
+                27 => {
+                    stdin.read(&mut key_bytes).unwrap();
+                    stdin.read(&mut key_bytes).unwrap();
+                    match key_bytes[0] {
+                        65 => return Command::Down,
+                        66 => return Command::Up,
+                        67 => return Command::Right,
+                        68 => return Command::Left,
+                        _ => return Command::None
+                    }
+                }
+
+                b'q' => return Command::Quit,
+                b'w' => return Command::Down,
+                b'a' => return Command::Left,
+                b's' => return Command::Right,
+                b'd' => return Command::Up,
+                _ => return Command::None
+            }
+    }
+
 
     fn run<W:Write>(stdin: &mut AsyncReader, stdout: &mut W) {
         let mut app = App::new();
@@ -257,32 +288,14 @@ impl App {
         let mut before = Instant::now();
         loop {
             app = app.update_field_size();
-            let mut key_bytes = [0];
-            stdin.read(&mut key_bytes).unwrap();
 
-            if key_bytes[0] != 0 {
-                app.char = key_bytes[0];
-            }
-
-            match key_bytes[0] {
-                27 => {
-                    stdin.read(&mut key_bytes).unwrap();
-                    stdin.read(&mut key_bytes).unwrap();
-                    app.char = key_bytes[0];
-                    match key_bytes[0] {
-                        65 => app.snake.dir = (0, -1),
-                        66 => app.snake.dir = (0, 1),
-                        67 => app.snake.dir = (1, 0),
-                        68 => app.snake.dir = (-1, 0),
-                        _ => {}
-                    }
-                }
-                b'q' => break,
-                b'w' => app.snake.dir = (0, -1),
-                b'a' => app.snake.dir = (-1, 0),
-                b's' => app.snake.dir = (0, 1),
-                b'd' => app.snake.dir = (1, 0),
-                _ => {}
+            match App::get_cmd(stdin) {
+                Command::Quit => break,
+                Command::Up => app.snake.dir = (0,1),
+                Command::Down => app.snake.dir = (0,-1),
+                Command::Left => app.snake.dir = (-1,0),
+                Command::Right => app.snake.dir = (1,0),
+                Command::None => {}
             }
 
             let mut speed = app.speed;
