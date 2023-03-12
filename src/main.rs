@@ -295,6 +295,34 @@ impl App {
         result
     }
 
+    fn show_game_over_message<W: Write>(&self, stdout: &mut W) {
+        let cp = CenteredPanel {
+            content: Vec::from(GAME_OVER_SCREEN),
+            field: self.field                    
+        };
+
+        cp.render(stdout);
+        write!(stdout, "{}", cursor::Goto(1, self.field.1+4)).unwrap();
+    }
+
+    fn wait_next_turn(&self, now: Instant, before: Instant) -> ControlFlow<()> {
+        let mut speed = self.speed;
+        
+        if self.snake.dir.1 != 0 {
+            speed = (speed as f32 / 1.6) as u64;
+        }
+
+        let interval = 1000 / speed;
+        let dt = (now.duration_since(before).subsec_nanos() / 1_000_000) as u64;
+
+
+        if dt < interval {
+            sleep(Duration::from_millis(interval - dt));
+            return ControlFlow::Break(());
+        }
+        ControlFlow::Continue(())
+    }
+
     fn run<W:Write>(stdin: &mut AsyncReader, stdout: &mut W) {
         let mut app = App::new();
         write!(stdout, "{}{}", clear::All, cursor::Hide).unwrap();
@@ -322,38 +350,12 @@ impl App {
             app.render(stdout);
 
             if app.game_over {
-                app.game_over(stdout);
+                app.show_game_over_message(stdout);
                 break;
             }
         }
 
         write!(stdout, "{}{}", cursor::Goto(1, app.field.1+4), cursor::Show).unwrap();
-    }
-
-    fn game_over<W: Write>(&self, stdout: &mut W) {
-        let cp = CenteredPanel {
-            content: Vec::from(GAME_OVER_SCREEN),
-            field: self.field                    
-        };
-
-        cp.render(stdout);
-        write!(stdout, "{}", cursor::Goto(1, self.field.1+4)).unwrap();
-    }
-
-    fn wait_next_turn(&self, now: Instant, before: Instant) -> ControlFlow<()> {
-        let mut speed = self.speed;
-        if self.snake.dir.1 != 0 {
-            speed = (speed as f32 / 1.6) as u64;
-        }
-        let interval = 1000 / speed;
-        let dt = (now.duration_since(before).subsec_nanos() / 1_000_000) as u64;
-
-
-        if dt < interval {
-            sleep(Duration::from_millis(interval - dt));
-            return ControlFlow::Break(());
-        }
-        ControlFlow::Continue(())
     }
 
 }
