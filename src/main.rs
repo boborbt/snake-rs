@@ -10,7 +10,7 @@ use termion::{
 use std::{
     io::{ Read, Write, stdout },
     thread::sleep, time::Duration,
-    time::Instant,
+    time::Instant, ops::ControlFlow,
 };
 
 use rand;
@@ -273,13 +273,27 @@ impl App {
 
                 b'q' => return Command::Quit,
                 b'w' => return Command::Down,
+                b's' => return Command::Up,
                 b'a' => return Command::Left,
-                b's' => return Command::Right,
-                b'd' => return Command::Up,
+                b'd' => return Command::Right,
                 _ => return Command::None
             }
     }
 
+    fn react_to_command(&self, cmd: Command) -> App {
+        let mut result = self.clone();
+
+        match cmd {
+            Command::Quit => result.game_over = true,
+            Command::Up => result.snake.dir = (0,1),
+            Command::Down => result.snake.dir = (0,-1),
+            Command::Left => result.snake.dir = (-1,0),
+            Command::Right => result.snake.dir = (1,0),
+            Command::None => {}
+        }
+
+        result
+    }
 
     fn run<W:Write>(stdin: &mut AsyncReader, stdout: &mut W) {
         let mut app = App::new();
@@ -289,26 +303,15 @@ impl App {
         loop {
             app = app.update_field_size();
 
-            match App::get_cmd(stdin) {
-                Command::Quit => break,
-                Command::Up => app.snake.dir = (0,1),
-                Command::Down => app.snake.dir = (0,-1),
-                Command::Left => app.snake.dir = (-1,0),
-                Command::Right => app.snake.dir = (1,0),
-                Command::None => {}
+            app = app.react_to_command(App::get_cmd(stdin));
+            
+            if app.game_over {
+                break;
             }
-
-            let mut speed = app.speed;
-            if app.snake.dir.1 != 0 {
-                speed = (speed as f32 / 1.6) as u64;
-            }
-
-            let interval = 1000 / speed;
+  
             let now = Instant::now();
-            let dt = (now.duration_since(before).subsec_nanos() / 1_000_000) as u64;
 
-            if dt < interval {
-                sleep(Duration::from_millis(interval - dt));
+            if let ControlFlow::Break(_) = app.wait_next_turn(now, before) {
                 continue;
             }
 
@@ -319,20 +322,42 @@ impl App {
             app.render(stdout);
 
             if app.game_over {
-                let cp = CenteredPanel {
-                    content: Vec::from(GAME_OVER_SCREEN),
-                    field: app.field                    
-                };
-
-                cp.render(stdout);
-                write!(stdout, "{}", cursor::Goto(1, app.field.1+4)).unwrap();
+                app.game_over(stdout);
                 break;
             }
         }
 
         write!(stdout, "{}{}", cursor::Goto(1, app.field.1+4), cursor::Show).unwrap();
     }
+
+    fn game_over<W: Write>(&self, stdout: &mut W) {
+        let cp = CenteredPanel {
+            content: Vec::from(GAME_OVER_SCREEN),
+            field: self.field                    
+        };
+
+        cp.render(stdout);
+        write!(stdout, "{}", cursor::Goto(1, self.field.1+4)).unwrap();
+    }
+
+    fn wait_next_turn(&self, now: Instant, before: Instant) -> ControlFlow<()> {
+        let mut speed = self.speed;
+        if self.snake.dir.1 != 0 {
+            speed = (speed as f32 / 1.6) as u64;
+        }
+        let interval = 1000 / speed;
+        let dt = (now.duration_since(before).subsec_nanos() / 1_000_000) as u64;
+
+
+        if dt < interval {
+            sleep(Duration::from_millis(interval - dt));
+            return ControlFlow::Break(());
+        }
+        ControlFlow::Continue(())
+    }
+
 }
+
 
 fn main() {
     let stdout = stdout();
