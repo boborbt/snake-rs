@@ -162,20 +162,28 @@ struct App<R, W> {
 
 impl<R: Read, W: Write>  App<R, W> {
     fn new(stdin: R, stdout: W) -> App<R,W> {
-        let size = terminal_size().unwrap();
-        let size = (size.0 - 2, size.1 - 4);
-        App {
+        let mut result = App {
             red_apple: Apple { x:5, y:5, points: 1, inc_speed: 1, apple_type: AppleTypes::Red },
             yellow_apple: Apple { x:10, y:10, points: 2, inc_speed: 2, apple_type: AppleTypes::Yellow },
             snake: Snake { body: vec![(3,1),(2,1),(1,1)], dir: (1,0) },
             stdin: stdin,
             stdout: stdout,
             speed: 10,
-            field: size,
+            field: (80,25),
             score: 0,
             game_over: false,
             char: ' ' as u8
-        }
+        };
+
+        result.update_field_size();
+        result
+    }
+
+    fn update_field_size(& mut self) {
+        let size = terminal_size().unwrap();
+        let size = (size.0 - 2, size.1 - 4);
+
+        self.field = size;
     }
 
     fn render(&mut self) {
@@ -224,6 +232,7 @@ impl<R: Read, W: Write>  App<R, W> {
 
         let mut before = Instant::now();
         loop {
+            self.update_field_size();
             let mut key_bytes = [0];
             self.stdin.read(&mut key_bytes).unwrap();
 
@@ -284,7 +293,7 @@ impl<R: Read, W: Write>  App<R, W> {
             }
         }
 
-        write!(self.stdout, "{}", cursor::Show).unwrap();
+        write!(self.stdout, "{}{}", cursor::Goto(1, self.field.1+4), cursor::Show).unwrap();
     }
 }
 
