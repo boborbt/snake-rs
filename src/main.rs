@@ -289,11 +289,11 @@ impl App {
 
         match cmd {
             Command::Quit => result.game_over = true,
-            Command::Up => newdir = (0,1),
-            Command::Down => newdir = (0,-1),
-            Command::Left => newdir = (-1,0),
-            Command::Right => newdir = (1,0),
-            Command::None => {}
+            Command::Up     => newdir = (0,1),
+            Command::Down   => newdir = (0,-1),
+            Command::Left   => newdir = (-1,0),
+            Command::Right  => newdir = (1,0),
+            Command::None   => {}
         }
 
         if newdir == (0,0) {
@@ -344,12 +344,6 @@ impl App {
         let mut before = Instant::now();
         loop {
             app = app.update_field_size();
-
-            app = app.react_to_command(App::get_cmd(stdin));
-            
-            if app.game_over {
-                break;
-            }
   
             let now = Instant::now();
 
@@ -358,6 +352,12 @@ impl App {
             }
 
             before = now;
+
+            app = app.react_to_command(App::get_cmd(stdin));
+            
+            if app.game_over {
+                break;
+            }
 
             app.snake = app.snake.mv(&app.field);
             app = app.check_collision();
