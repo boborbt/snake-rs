@@ -19,11 +19,13 @@ trait Renderable<W: Write> {
     fn render(&self, stdout: &mut W);
 }
 
+#[derive(Copy, Clone)]
 enum AppleTypes {
     Red,
     Yellow
 }
 
+#[derive(Copy, Clone)]
 struct Apple {
     x: u16,
     y: u16,
@@ -39,6 +41,20 @@ impl<W:Write> Renderable<W> for Apple {
             AppleTypes::Red => write!(stdout, "{}{}●{}", cursor::Goto(self.x,self.y), color::Fg(color::Red), color::Fg(color::Reset)).unwrap(),
             AppleTypes::Yellow => write!(stdout, "{}{}●{}", cursor::Goto(self.x,self.y), color::Fg(color::Yellow), color::Fg(color::Reset)).unwrap()
         }
+    }
+}
+
+impl Apple {
+    fn new(field: &(u16, u16), points:u64, speed:u64, apple_type: AppleTypes) -> Apple {
+        let x: u16 = rand::random::<u16>() % field.0 + 1;
+        let y: u16 = rand::random::<u16>() % field.1 + 1;
+
+
+        let mut apple_type = apple_type;
+        let mut points = points;
+        let mut inc_speed = speed;
+
+        Apple { x, y, points, inc_speed, apple_type }
     }
 }
 
@@ -64,6 +80,7 @@ const GAME_OVER_SCREEN:[&str;5] =  ["+--------------------------------+" ,
                                     "|                                |" ,
                                     "+--------------------------------+"];
 
+#[derive(Copy, Clone)]
 struct InfoPanel {
     score: u64,
     speed: u64,
@@ -93,15 +110,17 @@ impl<W:Write> Renderable<W> for InfoPanel {
     }
 }
 
+#[derive(Clone)]
 struct Snake {
     body: Vec<(u16, u16)>,
     dir: (i16, i16),
 } 
 
 impl Snake {
-    fn mv(&mut self, field: &(u16, u16)) {
+    fn mv(&self, field: &(u16, u16)) -> Snake {
         let mut new_x = self.body[0].0 as i16 + self.dir.0;
         let mut new_y = self.body[0].1 as i16 + self.dir.1;
+        let mut snake = self.clone();
 
         if new_x < 1 {
             new_x = field.0 as i16;
@@ -119,19 +138,23 @@ impl Snake {
             new_y = 1;
         }
 
-        self.body.insert(0, (new_x as u16, new_y as u16));
-        self.body.pop();
+        snake.body.insert(0, (new_x as u16, new_y as u16));
+        snake.body.pop();
+
+        snake
     }
 
     fn head_pos(&self) -> (u16, u16) {
         self.body[0]
     }
 
-    fn grow(&mut self) {
+    fn grow(&self) -> Snake {
+        let mut snake = self.clone();
         let last = self.body.len() - 1;
-        let last_pos = self.body[last];
-        self.body.push(last_pos);
-        self.body.push(last_pos);
+        let last_pos = self.body[last].clone();
+        snake.body.push(last_pos);
+        snake.body.push(last_pos);
+        snake
     }
 }
 
@@ -202,9 +225,9 @@ impl<R: Read, W: Write>  App<R, W> {
         let head_pos = self.snake.head_pos();
         let mut apple_eaten = false;
 
-        for apple in [&mut self.red_apple, &mut self.yellow_apple].iter() {
+        for apple in [self.red_apple,self.yellow_apple].iter() {
             if head_pos.0 == apple.x && head_pos.1 == apple.y {
-                self.snake.grow();
+                self.snake = self.snake.grow();
                 self.speed += apple.inc_speed;
                 self.score += apple.points;
                 apple_eaten = true;
@@ -212,10 +235,8 @@ impl<R: Read, W: Write>  App<R, W> {
         }
 
         if apple_eaten {
-            self.red_apple.x = rand::random::<u16>() % self.field.0 + 1;
-            self.red_apple.y = rand::random::<u16>() % self.field.1 + 1;
-            self.yellow_apple.x = rand::random::<u16>() % self.field.0 + 1;
-            self.yellow_apple.y = rand::random::<u16>() % self.field.1 + 1;
+            self.red_apple = Apple::new(&self.field, 1, 1, AppleTypes::Red);
+            self.yellow_apple = Apple::new(&self.field, 2, 2, AppleTypes::Yellow);
         }
 
 
@@ -277,7 +298,7 @@ impl<R: Read, W: Write>  App<R, W> {
 
             before = now;
 
-            self.snake.mv(&self.field);
+            self.snake = self.snake.mv(&self.field);
             self.check_collision();
             self.render();
 
