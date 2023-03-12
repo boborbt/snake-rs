@@ -8,6 +8,7 @@ use termion::{
 };
 
 use std::{
+    env,
     io::{ Read, Write, stdout },
     thread::sleep, time::Duration,
     time::Instant, ops::ControlFlow,
@@ -47,8 +48,8 @@ struct Apple {
 impl Renderable for Apple {
     fn render<W:Write>(&self, stdout: &mut W) {
         match self.apple_type {
-            AppleType::Red => write!(stdout, "{}{}●{}", cursor::Goto(self.x,self.y), color::Fg(color::Red), color::Fg(color::Reset)).unwrap(),
-            AppleType::Yellow => write!(stdout, "{}{}●{}", cursor::Goto(self.x,self.y), color::Fg(color::Yellow), color::Fg(color::Reset)).unwrap()
+            AppleType::Red => write!(stdout, "{}{}❤︎{}", cursor::Goto(self.x,self.y), color::Fg(color::Red), color::Fg(color::Reset)).unwrap(),
+            AppleType::Yellow => write!(stdout, "{}{}❦{}", cursor::Goto(self.x,self.y), color::Fg(color::Yellow), color::Fg(color::Reset)).unwrap()
         }
     }
 }
@@ -76,18 +77,18 @@ impl Renderable for CenteredPanel<'_> {
     fn render<W:Write>(&self, stdout: &mut W) {
         let mut row = (self.field.1 - self.content.len() as u16) / 2;
         for line in &self.content {
-            let col = (self.field.0 - line.len() as u16) / 2;
+            let col = (self.field.0 - line.chars().count() as u16) / 2;
             write!(stdout, "{}{}", cursor::Goto(col, row), line).unwrap();
             row += 1;
         }
     }
 }
 
-const GAME_OVER_SCREEN:[&str;5] =  ["+--------------------------------+" ,
-                                    "|                                |" ,
-                                    "|            GAME OVER           |" ,
-                                    "|                                |" ,
-                                    "+--------------------------------+"];
+const GAME_OVER_SCREEN:[&str;5] =  ["╭────────────────────────────────╮" ,
+                                    "│                                │" ,
+                                    "│            GAME OVER           │" ,
+                                    "│                                │" ,
+                                    "╰────────────────────────────────╯"];
 
 #[derive(Clone)]
 struct InfoPanel {
@@ -98,11 +99,11 @@ struct InfoPanel {
 
 impl Renderable for InfoPanel {
     fn render<W:Write>(&self, stdout: &mut W) {
-        let dashes = (0..self.field.0).map(|_| "-").collect::<String>();
+        let dashes = (0..self.field.0).map(|_| "─").collect::<String>();
         let row = self.field.1 + 1;
-        write!(stdout, "{}+{}+", cursor::Goto(1, row), dashes).unwrap();
+        write!(stdout, "{}╭{}╮", cursor::Goto(1, row), dashes).unwrap();
         let row = row + 1;
-        write!(stdout, "{}| {}Score{}: {} {}Speed{}: {}{}|", 
+        write!(stdout, "{}│ {}Score{}: {} {}Speed{}: {}{}│", 
                 cursor::Goto(1, row), 
                 color::Fg(color::Yellow),
                 color::Fg(color::Reset),
@@ -113,7 +114,7 @@ impl Renderable for InfoPanel {
                 cursor::Goto(self.field.0+2, row)
             ).unwrap();
         let row = row + 1;
-        write!(stdout, "{}+{}+", cursor::Goto(1, row), dashes).unwrap();
+        write!(stdout, "{}╰{}╯", cursor::Goto(1, row), dashes).unwrap();
     }
 }
 
@@ -171,7 +172,7 @@ impl Renderable for Snake {
 
         for (x,y) in &self.body {
             str.push_str(&String::from(cursor::Goto(*x,*y)));
-            str.push('●');
+            str.push('✿');
         }
 
         write!(stdout, "{}{}{}", color::Fg(color::Green), str, color::Fg(color::Reset)).unwrap();
@@ -187,10 +188,11 @@ struct App {
     field: (u16, u16),
     score: u64,
     game_over: bool,
+    easy_mode: bool
 }
 
 impl App {
-    fn new() -> App {
+    fn new(easy_mode: bool) -> App {
         let result = App {
             red_apple: Apple { x:5, y:5, points: 1, inc_speed: 1, apple_type: AppleType::Red },
             yellow_apple: Apple { x:10, y:10, points: 2, inc_speed: 2, apple_type: AppleType::Yellow },
@@ -199,6 +201,7 @@ impl App {
             field: (80,25),
             score: 0,
             game_over: false,
+            easy_mode: easy_mode
         };
 
         result.update_field_size()
@@ -282,14 +285,25 @@ impl App {
 
     fn react_to_command(&self, cmd: Command) -> App {
         let mut result = self.clone();
+        let mut newdir = (0,0);
 
         match cmd {
             Command::Quit => result.game_over = true,
-            Command::Up => result.snake.dir = (0,1),
-            Command::Down => result.snake.dir = (0,-1),
-            Command::Left => result.snake.dir = (-1,0),
-            Command::Right => result.snake.dir = (1,0),
+            Command::Up => newdir = (0,1),
+            Command::Down => newdir = (0,-1),
+            Command::Left => newdir = (-1,0),
+            Command::Right => newdir = (1,0),
             Command::None => {}
+        }
+
+        if newdir == (0,0) {
+            return result;
+        }
+
+        if !self.easy_mode {
+            result.snake.dir = newdir;
+        } else if newdir.0 != -self.snake.dir.0 && newdir.1 != -self.snake.dir.1 {
+            result.snake.dir = newdir;
         }
 
         result
@@ -323,8 +337,8 @@ impl App {
         ControlFlow::Continue(())
     }
 
-    fn run<W:Write>(stdin: &mut AsyncReader, stdout: &mut W) {
-        let mut app = App::new();
+    fn run<W:Write>(stdin: &mut AsyncReader, stdout: &mut W, easy_mode: bool) {
+        let mut app = App::new(easy_mode);
         write!(stdout, "{}{}", clear::All, cursor::Hide).unwrap();
 
         let mut before = Instant::now();
@@ -362,10 +376,14 @@ impl App {
 
 
 fn main() {
+    let args: Vec<String> = env::args().collect();
+    let easy_mode = args.len() > 1 && args[1] == "--easy";
+        
+
     let stdout = stdout();
     let mut stdin = async_stdin();
     let mut stdout = stdout.lock().into_raw_mode().unwrap();
     stdout.activate_raw_mode().unwrap();
     
-    App::run(&mut stdin, &mut stdout);
+    App::run(&mut stdin, &mut stdout, easy_mode);
 }
