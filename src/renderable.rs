@@ -27,10 +27,10 @@ impl Renderable for CenteredPanel<'_> {
 }
 
 pub const GAME_OVER_SCREEN:[&str;5] =  ["╭────────────────────────────────╮" ,
-                                    "│                                │" ,
-                                    "│            GAME OVER           │" ,
-                                    "│                                │" ,
-                                    "╰────────────────────────────────╯"];
+                                        "│                                │" ,
+                                        "│            GAME OVER           │" ,
+                                        "│                                │" ,
+                                        "╰────────────────────────────────╯"];
 
 #[derive(Clone)]
 pub struct InfoPanel {
