@@ -114,7 +114,7 @@ impl App {
         result
     }
 
-    fn get_cmd(stdin: &mut AsyncReader) -> Command {
+    fn input_cmd(stdin: &mut AsyncReader) -> Command {
             let mut key_bytes = [0];
             stdin.read(&mut key_bytes).unwrap();
 
@@ -210,7 +210,7 @@ impl App {
 
             before = now;
 
-            app = app.react_to_command(App::get_cmd(stdin));
+            app = app.react_to_command(App::input_cmd(stdin));
             
             if app.game_over {
                 break;
