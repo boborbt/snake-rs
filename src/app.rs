@@ -198,8 +198,6 @@ impl App {
 
     pub(crate) fn run<W:Write>(stdin: &mut AsyncReader, stdout: &mut W, easy_mode: bool) {
         let mut app = App::new(easy_mode);
-        write!(stdout, "{}{}", clear::All, cursor::Hide).unwrap();
-
         let mut before = Instant::now();
         loop {
             app = app.update_field_size();
@@ -224,11 +222,10 @@ impl App {
 
             if app.game_over {
                 app.show_game_over_message(stdout);
+                stdout.flush().unwrap();
                 break;
             }
         }
-
-        write!(stdout, "{}{}", cursor::Goto(1, app.field.1+4), cursor::Show).unwrap();
     }
 
 }

@@ -27,10 +27,19 @@ impl Renderable for CenteredPanel<'_> {
 }
 
 pub(crate) const GAME_OVER_SCREEN:[&str;5] =  ["╭────────────────────────────────╮" ,
-                                        "│                                │" ,
-                                        "│            GAME OVER           │" ,
-                                        "│                                │" ,
-                                        "╰────────────────────────────────╯"];
+                                               "│                                │" ,
+                                               "│            GAME OVER           │" ,
+                                               "│                                │" ,
+                                               "╰────────────────────────────────╯"];
+
+pub(crate) const MAIN_MENU_SCREEN:[&str;8] =  ["╭─────────────────────────────╮" ,
+                                               "│            SNAKE            │" ,
+                                               "│                             │" ,
+                                               "│        1. EASY MODE         │" ,
+                                               "│        2. HARD MODE         │" ,
+                                               "│        q. QUIT              │" ,
+                                               "│                             │" ,
+                                               "╰─────────────────────────────╯"];
 
 #[derive(Clone)]
 pub(crate) struct InfoPanel {
@@ -59,3 +68,5 @@ impl Renderable for InfoPanel {
         write!(stdout, "{}╰{}╯", cursor::Goto(1, row), dashes).unwrap();
     }
 }
+
+

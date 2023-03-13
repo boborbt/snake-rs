@@ -17,29 +17,45 @@
 mod gameobjs;
 mod renderable;
 mod app;
+mod menu;
 
 use termion::{
     raw::IntoRawMode,
-    async_stdin
+    async_stdin,
+    clear,
+    cursor
 };
 
 use std::{
-    env,
-    io::{ stdout },
+    io::{ stdout, Write },
+    thread, time::Duration
 };
 
 use crate::app::App;
+use crate::menu::{ MainMenuChoice };
 
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
-    let easy_mode = args.len() > 1 && args[1] == "--easy";
-        
 
     let stdout = stdout();
     let mut stdin = async_stdin();
     let mut stdout = stdout.lock().into_raw_mode().unwrap();
     stdout.activate_raw_mode().unwrap();
+    write!(stdout, "{}{}", clear::All, cursor::Hide).unwrap();
+
     
-    App::run(&mut stdin, &mut stdout, easy_mode);
+    loop {
+        match menu::run(&mut stdin, &mut stdout) {
+            MainMenuChoice::Quit => break,
+            MainMenuChoice::EasyMode => {
+                App::run(&mut stdin, &mut stdout, true);
+            },
+            MainMenuChoice::HardMode => {
+                App::run(&mut stdin, &mut stdout, false);
+            }
+        }
+
+        thread::sleep(Duration::from_millis(1000));
+    }
+    write!(stdout, "{}", cursor::Show).unwrap();
 }
