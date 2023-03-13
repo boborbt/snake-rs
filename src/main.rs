@@ -38,6 +38,11 @@ use crate::gameobjs::{
     Apple,
     AppleType
 };
+use crate::renderable::{
+    InfoPanel,
+    CenteredPanel,
+    GAME_OVER_SCREEN
+};
 
 
 enum Command {
@@ -49,56 +54,6 @@ enum Command {
     None
 }
 
-#[derive(Clone)]
-struct CenteredPanel<'a> {
-    content: Vec<&'a str>,
-    field: (u16, u16)
-}
-
-impl Renderable for CenteredPanel<'_> {
-    fn render<W:Write>(&self, stdout: &mut W) {
-        let mut row = (self.field.1 - self.content.len() as u16) / 2;
-        for line in &self.content {
-            let col = (self.field.0 - line.chars().count() as u16) / 2;
-            write!(stdout, "{}{}", cursor::Goto(col, row), line).unwrap();
-            row += 1;
-        }
-    }
-}
-
-const GAME_OVER_SCREEN:[&str;5] =  ["╭────────────────────────────────╮" ,
-                                    "│                                │" ,
-                                    "│            GAME OVER           │" ,
-                                    "│                                │" ,
-                                    "╰────────────────────────────────╯"];
-
-#[derive(Clone)]
-struct InfoPanel {
-    score: u64,
-    speed: u64,
-    field: (u16, u16)
-}
-
-impl Renderable for InfoPanel {
-    fn render<W:Write>(&self, stdout: &mut W) {
-        let dashes = (0..self.field.0).map(|_| "─").collect::<String>();
-        let row = self.field.1 + 1;
-        write!(stdout, "{}╭{}╮", cursor::Goto(1, row), dashes).unwrap();
-        let row = row + 1;
-        write!(stdout, "{}│ {}Score{}: {} {}Speed{}: {}{}│", 
-                cursor::Goto(1, row), 
-                color::Fg(color::Yellow),
-                color::Fg(color::Reset),
-                self.score,
-                color::Fg(color::Yellow),
-                color::Fg(color::Reset),
-                self.speed,
-                cursor::Goto(self.field.0+2, row)
-            ).unwrap();
-        let row = row + 1;
-        write!(stdout, "{}╰{}╯", cursor::Goto(1, row), dashes).unwrap();
-    }
-}
 
 #[derive(Clone)]
 struct Snake {
