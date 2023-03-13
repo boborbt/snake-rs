@@ -88,22 +88,24 @@ impl App {
     fn check_collision(&self) -> App {
         let mut result = self.clone();
         let head_pos = self.snake.head_pos();
-        let mut apple_eaten = false;
+        let mut apple_eaten: Option<AppleType> = None;
 
         for apple in [&self.red_apple,&self.yellow_apple].iter() {
             if head_pos.0 == apple.x && head_pos.1 == apple.y {
                 result.snake = self.snake.grow(apple.points as u16);
                 result.speed += apple.inc_speed;
                 result.score += apple.points;
-                apple_eaten = true;
+                apple_eaten = Some(apple.apple_type.clone());
             }
         }
 
-        if apple_eaten {
+        if Some(AppleType::Red) == apple_eaten {
             result.red_apple = Apple::new(&self.field, 1, 1, AppleType::Red);
-            result.yellow_apple = Apple::new(&self.field, 2, 2, AppleType::Yellow);
         }
 
+        if Some(AppleType::Yellow) == apple_eaten {
+            result.yellow_apple = Apple::new(&self.field, 2, 2, AppleType::Yellow);
+        }
 
         for (x,y) in &self.snake.body[1..] {
             if head_pos.0 == *x && head_pos.1 == *y {

@@ -8,7 +8,7 @@ use termion::{
 };
 
 
-#[derive(Clone)]
+#[derive(Clone,PartialEq)]
 pub(crate) enum AppleType {
     Red,
     Yellow
