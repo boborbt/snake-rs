@@ -9,11 +9,12 @@ use termion::{
 
 
 #[derive(Clone)]
-enum AppleType {
+pub enum AppleType {
     Red,
     Yellow
 }
 
+#[derive(Clone)]
 pub struct Apple {
     pub x: u16,
     pub y: u16,
