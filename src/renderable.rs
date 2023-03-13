@@ -5,14 +5,14 @@ use termion::{
 };
 
 
-pub trait Renderable {
+pub(crate) trait Renderable {
     fn render<W: Write>(&self, stdout: &mut W);
 }
 
 #[derive(Clone)]
-pub struct CenteredPanel<'a> {
-    pub content: Vec<&'a str>,
-    pub field: (u16, u16)
+pub(crate) struct CenteredPanel<'a> {
+    pub(crate) content: Vec<&'a str>,
+    pub(crate) field: (u16, u16)
 }
 
 impl Renderable for CenteredPanel<'_> {
@@ -26,17 +26,17 @@ impl Renderable for CenteredPanel<'_> {
     }
 }
 
-pub const GAME_OVER_SCREEN:[&str;5] =  ["╭────────────────────────────────╮" ,
+pub(crate) const GAME_OVER_SCREEN:[&str;5] =  ["╭────────────────────────────────╮" ,
                                         "│                                │" ,
                                         "│            GAME OVER           │" ,
                                         "│                                │" ,
                                         "╰────────────────────────────────╯"];
 
 #[derive(Clone)]
-pub struct InfoPanel {
-    pub score: u64,
-    pub speed: u64,
-    pub field: (u16, u16)
+pub(crate) struct InfoPanel {
+    pub(crate) score: u64,
+    pub(crate) speed: u64,
+    pub(crate) field: (u16, u16)
 }
 
 impl Renderable for InfoPanel {

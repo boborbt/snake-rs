@@ -9,18 +9,18 @@ use termion::{
 
 
 #[derive(Clone)]
-pub enum AppleType {
+pub(crate) enum AppleType {
     Red,
     Yellow
 }
 
 #[derive(Clone)]
-pub struct Apple {
-    pub x: u16,
-    pub y: u16,
-    pub points: u64,
-    pub inc_speed: u64,
-    pub apple_type: AppleType
+pub(crate) struct Apple {
+    pub(crate) x: u16,
+    pub(crate) y: u16,
+    pub(crate) points: u64,
+    pub(crate) inc_speed: u64,
+    pub(crate) apple_type: AppleType
 }
 
 
@@ -34,7 +34,7 @@ impl Renderable for Apple {
 }
 
 impl Apple {
-    pub fn new(field: &(u16, u16), points:u64, speed:u64, apple_type: AppleType) -> Apple {
+    pub(crate) fn new(field: &(u16, u16), points:u64, speed:u64, apple_type: AppleType) -> Apple {
         let x: u16 = rand::random::<u16>() % field.0 + 1;
         let y: u16 = rand::random::<u16>() % field.1 + 1;
 
@@ -48,13 +48,13 @@ impl Apple {
 }
 
 #[derive(Clone)]
-pub struct Snake {
-    pub body: Vec<(u16, u16)>,
-    pub dir: (i16, i16),
+pub(crate) struct Snake {
+    pub(crate) body: Vec<(u16, u16)>,
+    pub(crate) dir: (i16, i16),
 } 
 
 impl Snake {
-    pub fn mv(&self, field: &(u16, u16)) -> Snake {
+    pub(crate) fn mv(&self, field: &(u16, u16)) -> Snake {
         let mut new_x = self.body[0].0 as i16 + self.dir.0;
         let mut new_y = self.body[0].1 as i16 + self.dir.1;
         let mut snake = self.clone();
@@ -68,10 +68,10 @@ impl Snake {
         }
 
         if new_y < 1 {
-            new_y = field.1 as i16 ;
+            new_y = field.1 as i16;
         }
 
-        if new_y > field.1 as i16{
+        if new_y > field.1 as i16 {
             new_y = 1;
         }
 
@@ -81,16 +81,18 @@ impl Snake {
         snake
     }
 
-    pub fn head_pos(&self) -> (u16, u16) {
+    pub(crate) fn head_pos(&self) -> (u16, u16) {
         self.body[0]
     }
 
-    pub fn grow(&self) -> Snake {
+    pub(crate) fn grow(&self, len: u16) -> Snake {
         let mut snake = self.clone();
         let last = self.body.len() - 1;
         let last_pos = self.body[last].clone();
-        snake.body.push(last_pos);
-        snake.body.push(last_pos);
+        for _ in 0..len {
+            snake.body.push(last_pos);
+        }
+
         snake
     }
 }

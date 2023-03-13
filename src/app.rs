@@ -37,7 +37,7 @@ enum Command {
 
 
 #[derive(Clone)]
-pub struct App {
+pub(crate) struct App {
     red_apple: Apple,
     yellow_apple: Apple,
     snake: Snake,
@@ -92,7 +92,7 @@ impl App {
 
         for apple in [&self.red_apple,&self.yellow_apple].iter() {
             if head_pos.0 == apple.x && head_pos.1 == apple.y {
-                result.snake = self.snake.grow();
+                result.snake = self.snake.grow(apple.points as u16);
                 result.speed += apple.inc_speed;
                 result.score += apple.points;
                 apple_eaten = true;
@@ -194,7 +194,7 @@ impl App {
         ControlFlow::Continue(())
     }
 
-    pub fn run<W:Write>(stdin: &mut AsyncReader, stdout: &mut W, easy_mode: bool) {
+    pub(crate) fn run<W:Write>(stdin: &mut AsyncReader, stdout: &mut W, easy_mode: bool) {
         let mut app = App::new(easy_mode);
         write!(stdout, "{}{}", clear::All, cursor::Hide).unwrap();
 
