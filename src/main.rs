@@ -32,7 +32,7 @@ use std::{
 };
 
 use crate::app::App;
-use crate::menu::{ MainMenuChoice };
+use crate::menu::MainMenuChoice;
 
 
 fn main() {
