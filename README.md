@@ -8,4 +8,5 @@ This program is licenced under the GPL v3.0. See LICENCE for more information.
 
 ## TODO
 
-- [ ] Move game elements into separate files
+- [X] Move game elements into separate files
+- [ ] Fix visibility of mod elements
