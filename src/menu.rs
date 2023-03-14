@@ -1,6 +1,8 @@
 use std::io::{ Read, Write };
+use std::thread;
+use std::time::Duration;
 
-use termion::{ AsyncReader, terminal_size, color, cursor, clear };
+use termion::{ AsyncReader, terminal_size, cursor, clear };
 
 use crate::renderable::{
     Renderable,
@@ -43,6 +45,8 @@ pub(crate) fn run<W:Write>(stdin:&mut AsyncReader, stdout:&mut W, score_board: S
             },
             _ => ()
         }
+
+        thread::sleep(Duration::from_millis(100));
     }
 }
 
