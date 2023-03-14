@@ -1,6 +1,4 @@
-use std::io::{ Read, Write };
-use std::thread;
-use std::time::Duration;
+use std::io::{ Write };
 
 use termion::{ AsyncReader, terminal_size, cursor, clear };
 
@@ -9,6 +7,8 @@ use crate::renderable::{
     CenteredPanel,
     MAIN_MENU_SCREEN
 };
+
+use crate::io::wait_char;
 
 use crate::scores::ScoreBoard;
 
@@ -30,10 +30,10 @@ pub(crate) fn run<W:Write>(stdin:&mut AsyncReader, stdout:&mut W, score_board: S
     stdout.flush().unwrap();
 
     loop {
-        let mut buf = [0; 1];
-        stdin.read(&mut buf).unwrap();
 
-        match buf[0] {
+        let char = wait_char(stdin);
+
+        match char {
             b'1' => {
                 return MainMenuChoice::EasyMode;
             },
@@ -45,8 +45,6 @@ pub(crate) fn run<W:Write>(stdin:&mut AsyncReader, stdout:&mut W, score_board: S
             },
             _ => ()
         }
-
-        thread::sleep(Duration::from_millis(100));
     }
 }
 

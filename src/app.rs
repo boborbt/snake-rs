@@ -4,11 +4,13 @@ use crate::{
         AppleType,
         Snake
     },
+    io::wait_char,
     renderable::{
         Renderable,
         InfoPanel,
         CenteredPanel,
-        GAME_OVER_SCREEN
+        GAME_OVER_SCREEN,
+        CONFIRM_QUIT_SCREEN
     }
 };
 
@@ -45,6 +47,7 @@ pub(crate) struct App {
     field: (u16, u16),
     score: u64,
     game_over: bool,
+    quit: bool,
     easy_mode: bool
 }
 
@@ -58,6 +61,7 @@ impl App {
             field: (80,25),
             score: 0,
             game_over: false,
+            quit: false,
             easy_mode: easy_mode
         };
 
@@ -147,7 +151,7 @@ impl App {
         let mut newdir = (0,0);
 
         match cmd {
-            Command::Quit => result.game_over = true,
+            Command::Quit => result.quit = true,
             Command::Up     => newdir = (0,1),
             Command::Down   => newdir = (0,-1),
             Command::Left   => newdir = (-1,0),
@@ -196,6 +200,30 @@ impl App {
         ControlFlow::Continue(())
     }
 
+    fn confirm_quit<W:Write>(self, stdin: &mut AsyncReader, stdout: &mut W) -> App {
+        let confirm_dialog = CenteredPanel {
+            content: Vec::from(CONFIRM_QUIT_SCREEN),
+            field: self.field
+        };
+
+        confirm_dialog.render(stdout);
+        stdout.flush().unwrap();
+
+        let choice:u8 = wait_char(stdin);
+
+        if choice == b'y' {
+            App {
+                game_over: true,
+                ..self
+            }
+        } else {
+            App {
+                quit: false,
+                ..self
+            }
+        }
+    }
+
     pub(crate) fn run<W:Write>(stdin: &mut AsyncReader, stdout: &mut W, easy_mode: bool) -> u64 {
         let mut app = App::new(easy_mode);
         let mut before = Instant::now();
@@ -211,18 +239,22 @@ impl App {
             before = now;
 
             app = app.react_to_command(App::input_cmd(stdin));
-            
-            if app.game_over {
-                break;
-            }
 
             app.snake = app.snake.mv(&app.field);
             app = app.check_collision();
             app.render(stdout);
 
+            if app.quit {
+                app = app.confirm_quit(stdin, stdout);
+                if app.game_over {
+                    break;
+                }
+            }
+
             if app.game_over {
                 app.show_game_over_message(stdout);
                 stdout.flush().unwrap();
+                wait_char(stdin);
                 break;
             }
         }

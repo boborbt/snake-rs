@@ -19,6 +19,7 @@ mod renderable;
 mod app;
 mod menu;
 mod scores;
+mod io;
 
 use termion::{
     raw::IntoRawMode,
@@ -28,8 +29,7 @@ use termion::{
 };
 
 use std::{
-    io::{ stdout, Write },
-    thread, time::Duration
+    io::{ stdout, Write }
 };
 
 use crate::app::App;
@@ -61,8 +61,6 @@ fn main() {
                 score_board = score_board.update(score, Difficulty::Hard);
             }
         }
-
-        thread::sleep(Duration::from_millis(1000));
     }
     write!(stdout, "{}", cursor::Show).unwrap();
 }
