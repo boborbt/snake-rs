@@ -196,7 +196,7 @@ impl App {
         ControlFlow::Continue(())
     }
 
-    pub(crate) fn run<W:Write>(stdin: &mut AsyncReader, stdout: &mut W, easy_mode: bool) {
+    pub(crate) fn run<W:Write>(stdin: &mut AsyncReader, stdout: &mut W, easy_mode: bool) -> u64 {
         let mut app = App::new(easy_mode);
         let mut before = Instant::now();
         loop {
@@ -226,6 +226,8 @@ impl App {
                 break;
             }
         }
+
+        return app.score;
     }
 
 }

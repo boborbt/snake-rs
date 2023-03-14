@@ -18,6 +18,7 @@ mod gameobjs;
 mod renderable;
 mod app;
 mod menu;
+mod scores;
 
 use termion::{
     raw::IntoRawMode,
@@ -33,6 +34,7 @@ use std::{
 
 use crate::app::App;
 use crate::menu::MainMenuChoice;
+use crate::scores::{ScoreBoard, Difficulty};
 
 
 fn main() {
@@ -40,18 +42,23 @@ fn main() {
     let stdout = stdout();
     let mut stdin = async_stdin();
     let mut stdout = stdout.lock().into_raw_mode().unwrap();
+    let mut score_board = ScoreBoard::new();
+
+
     stdout.activate_raw_mode().unwrap();
-    write!(stdout, "{}{}", clear::All, cursor::Hide).unwrap();
+    write!(stdout, "{}{}", clear::All, cursor::Hide).unwrap();    
 
     
     loop {
-        match menu::run(&mut stdin, &mut stdout) {
+        match menu::run(&mut stdin, &mut stdout, score_board) {
             MainMenuChoice::Quit => break,
             MainMenuChoice::EasyMode => {
-                App::run(&mut stdin, &mut stdout, true);
+                let score = App::run(&mut stdin, &mut stdout, true);
+                score_board =  score_board.update(score, Difficulty::Easy);
             },
             MainMenuChoice::HardMode => {
-                App::run(&mut stdin, &mut stdout, false);
+                let score = App::run(&mut stdin, &mut stdout, false);
+                score_board = score_board.update(score, Difficulty::Hard);
             }
         }
 
