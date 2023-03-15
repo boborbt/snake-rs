@@ -10,7 +10,7 @@ use crate::{
         InfoPanel,
         CenteredPanel,
         GAME_OVER_SCREEN,
-        CONFIRM_QUIT_SCREEN
+        confirm_quit
     }
 };
 
@@ -200,30 +200,6 @@ impl App {
         ControlFlow::Continue(())
     }
 
-    fn confirm_quit<W:Write>(self, stdin: &mut AsyncReader, stdout: &mut W) -> App {
-        let confirm_dialog = CenteredPanel {
-            content: Vec::from(CONFIRM_QUIT_SCREEN),
-            field: self.field
-        };
-
-        confirm_dialog.render(stdout);
-        stdout.flush().unwrap();
-
-        let choice:u8 = wait_char(stdin);
-
-        if choice == b'y' {
-            App {
-                game_over: true,
-                ..self
-            }
-        } else {
-            App {
-                quit: false,
-                ..self
-            }
-        }
-    }
-
     pub(crate) fn run<W:Write>(stdin: &mut AsyncReader, stdout: &mut W, easy_mode: bool) -> u64 {
         let mut app = App::new(easy_mode);
         let mut before = Instant::now();
@@ -244,11 +220,10 @@ impl App {
             app = app.check_collision();
             app.render(stdout);
 
-            if app.quit {
-                app = app.confirm_quit(stdin, stdout);
-                if app.game_over {
-                    break;
-                }
+            if app.quit && confirm_quit(stdin, stdout, app.field) {
+                break;
+            } else {
+                app.quit = false;
             }
 
             if app.game_over {

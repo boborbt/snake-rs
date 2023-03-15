@@ -1,8 +1,10 @@
 use std::io::Write;
 use termion::{
     cursor,
-    color
+    color,
+    AsyncReader
 };
+use crate::io::wait_char;
 
 
 pub(crate) trait Renderable {
@@ -76,4 +78,17 @@ impl Renderable for InfoPanel {
     }
 }
 
+pub(crate) fn confirm_quit<W:Write>(stdin: &mut AsyncReader, stdout: &mut W, field:(u16, u16)) -> bool {
+    let confirm_dialog = CenteredPanel {
+        content: Vec::from(CONFIRM_QUIT_SCREEN),
+        field: field
+    };
+
+    confirm_dialog.render(stdout);
+    stdout.flush().unwrap();
+
+    let choice:u8 = wait_char(stdin);
+
+    return choice == b'y';
+}
 
