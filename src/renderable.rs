@@ -2,9 +2,38 @@ use std::io::Write;
 use termion::{
     cursor,
     color,
-    AsyncReader
+    AsyncReader,
 };
 use crate::io::wait_char;
+
+#[derive(Clone, Copy)]
+pub(crate) struct Frame {
+    pub(crate) pos: (u16, u16),
+    pub(crate) size: (u16, u16)
+}
+
+impl Frame {
+    pub(crate) fn new(pos: (u16, u16), size: (u16, u16)) -> Frame {
+        Frame { pos, size }
+    }
+
+    pub(crate) fn render<W:Write>(&self, stdout: &mut W) {
+        let (x, y) = self.pos;
+        let (w, h) = self.size;
+
+        write!(stdout, "{}╭{}╮", cursor::Goto(x, y), "─".repeat((w - 2) as usize)).unwrap();
+
+        for i in 1..(h-1) {
+            write!(stdout, "{}│{}│", cursor::Goto(x, y + i), cursor::Goto(x+w-1,y+i)).unwrap();
+        }
+        write!(stdout, "{}╰{}╯", cursor::Goto(x, y + h-1), "─".repeat((w - 2) as usize)).unwrap();
+    }
+
+    pub(crate) fn goto(&self, x: u16, y: u16) -> cursor::Goto {
+        let (_x, _y) = self.pos;
+        return cursor::Goto(_x + x, _y + y)
+    }
+}
 
 
 pub(crate) trait Renderable {
@@ -54,27 +83,21 @@ pub(crate) const CONFIRM_QUIT_SCREEN:[&str;6] =  ["╭────────�
 pub(crate) struct InfoPanel {
     pub(crate) score: u64,
     pub(crate) speed: u64,
-    pub(crate) field: (u16, u16)
+    pub(crate) frame: Frame
 }
 
 impl Renderable for InfoPanel {
     fn render<W:Write>(&self, stdout: &mut W) {
-        let dashes = (0..self.field.0).map(|_| "─").collect::<String>();
-        let row = self.field.1 + 1;
-        write!(stdout, "{}╭{}╮", cursor::Goto(1, row), dashes).unwrap();
-        let row = row + 1;
-        write!(stdout, "{}│ {}Score{}: {} {}Speed{}: {}{}│", 
-                cursor::Goto(1, row), 
+        self.frame.render(stdout);
+        write!(stdout, "{}{}Score{}: {} {}Speed{}: {}", 
+                self.frame.goto(2, 1), 
                 color::Fg(color::Yellow),
                 color::Fg(color::Reset),
                 self.score,
                 color::Fg(color::Yellow),
                 color::Fg(color::Reset),
-                self.speed,
-                cursor::Goto(self.field.0+2, row)
+                self.speed
             ).unwrap();
-        let row = row + 1;
-        write!(stdout, "{}╰{}╯", cursor::Goto(1, row), dashes).unwrap();
     }
 }
 
