@@ -2,6 +2,7 @@ use termion::{color, terminal_size};
 use std::io::Write;
 use crate::renderable::Renderable;
 
+#[derive(Copy, Clone, PartialEq)]
 pub(crate) enum Difficulty {
     Easy,
     Hard
