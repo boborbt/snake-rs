@@ -42,7 +42,7 @@ fn main() {
     let stdout = stdout();
     let mut stdin = async_stdin();
     let mut stdout = stdout.lock().into_raw_mode().unwrap();
-    let mut score_board = ScoreBoard::new();
+    let mut score_board = ScoreBoard::load();
 
 
     stdout.activate_raw_mode().unwrap();
@@ -62,6 +62,7 @@ fn main() {
         if let Some((difficulty, size)) = choice {
             let score = App::run(&mut stdin, &mut stdout, difficulty == Difficulty::Easy, size);
             score_board = score_board.update(score, menu_choice);
+            score_board.save();
         } else {
             break;
         }

@@ -1,4 +1,5 @@
 use std::io::{ Write };
+use serde::{ Serialize, Deserialize };
 
 use termion::{ AsyncReader, terminal_size, cursor, clear };
 
@@ -13,7 +14,7 @@ use crate::io::wait_char;
 
 use crate::scores::ScoreBoard;
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub(crate) enum MainMenuChoice {
     EasyMode,
     HardMode,

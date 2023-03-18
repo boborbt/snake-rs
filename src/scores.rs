@@ -1,6 +1,8 @@
 use termion::{color, terminal_size};
-use std::io::Write;
+use std::io::{Read, Write};
 use crate::{renderable::Renderable, menu::MainMenuChoice};
+use serde::{Deserialize, Serialize};
+
 
 #[derive(Copy, Clone, PartialEq)]
 pub(crate) enum Difficulty {
@@ -8,13 +10,13 @@ pub(crate) enum Difficulty {
     Hard
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Serialize, Deserialize)]
 pub(crate) struct LBScore {
     pub(crate) last: u64,
     pub(crate) best: u64
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Serialize, Deserialize)]
 pub(crate) struct ScoreBoard {
     scores: [(MainMenuChoice, LBScore); 4]
 }
@@ -61,4 +63,24 @@ impl ScoreBoard {
 
         return ScoreBoard { scores: new_scores };
     }
+
+    pub(crate) fn load() -> ScoreBoard {
+        let file = std::fs::File::open("scores.json");
+        if let Ok(mut file) = file {
+            let mut contents = String::new();
+            file.read_to_string(&mut contents).unwrap();
+            let scores: ScoreBoard = serde_json::from_str(&contents).unwrap();
+            return scores;
+        }
+
+        return ScoreBoard::new();
+    }
+
+    pub(crate) fn save(self)  {
+        let mut file = std::fs::File::create("scores.json").unwrap();    
+
+        let json = serde_json::to_string(&self).unwrap();
+        file.write_all(json.as_bytes()).unwrap();
+    }
+
 }

@@ -8,3 +8,5 @@ edition = "2021"
 [dependencies]
 termion = "2.0"
 rand = "0.8.5"
+serde_json = "1.0.94"
+serde = { version = "1.0.157", features = ["std", "derive"] }
