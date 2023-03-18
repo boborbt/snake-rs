@@ -3,6 +3,7 @@ use std::io::{ Write };
 use termion::{ AsyncReader, terminal_size, cursor, clear };
 
 use crate::renderable::{
+    Frame,
     Renderable,
     CenteredPanel,
     MAIN_MENU_SCREEN
@@ -21,7 +22,7 @@ pub(crate) enum MainMenuChoice {
 pub(crate) fn run<W:Write>(stdin:&mut AsyncReader, stdout:&mut W, score_board: ScoreBoard) -> MainMenuChoice {
     let panel = CenteredPanel {
         content: MAIN_MENU_SCREEN.to_vec(),
-        field: terminal_size().unwrap()
+        frame: Frame::new((1,1), terminal_size().unwrap())
     };
     write!(stdout, "{}{}", clear::All, cursor::Goto(1,1)).unwrap();
     score_board.render(stdout);

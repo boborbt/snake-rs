@@ -41,44 +41,49 @@ enum Command {
 
 #[derive(Clone)]
 pub(crate) struct App {
+    frame: Frame,
     red_apple: Apple,
     yellow_apple: Apple,
     snake: Snake,
     speed: u64,
-    field: (u16, u16),
     score: u64,
     game_over: bool,
     quit: bool,
     easy_mode: bool,
-    frame: Frame
 }
 
 impl App {
     fn new(easy_mode: bool) -> App {
         let frame = Frame { pos:(1,1), size: (78,23) };
         let result = App {
-            red_apple: Apple { x:5, y:5, points: 1, inc_speed: 1, apple_type: AppleType::Red, frame },
-            yellow_apple: Apple { x:10, y:10, points: 2, inc_speed: 2, apple_type: AppleType::Yellow, frame },
-            snake: Snake { body: vec![(3,1),(2,1),(1,1)], dir: (1,0) },
+            frame: frame,
+            red_apple: Apple { x:1, y:1, points: 1, inc_speed: 1, apple_type: AppleType::Red, frame: frame },
+            yellow_apple: Apple { x:10, y:10, points: 2, inc_speed: 2, apple_type: AppleType::Yellow, frame: frame },
+            snake: Snake { body: vec![(3,1),(2,1),(1,1)], dir: (1,0), frame },
             speed: 10,
-            field: (80,25),
             score: 0,
             game_over: false,
             quit: false,
-            easy_mode: easy_mode,
-            frame
+            easy_mode: easy_mode
         };
 
-        result.update_field_size()
+        result.update_frame_size()
     }
 
-    fn update_field_size(self) -> App {
+    fn update_frame_size(self) -> App {
         let size = terminal_size().unwrap();
         let size = (size.0, size.1 - 3);
+        let frame = Frame { pos: (1,1), size };
+
+        if frame == self.frame {
+            return self;
+        }
 
         App {
-            field: size,
-            frame: Frame::new((1,1),size),
+            frame,
+            red_apple: Apple { frame, ..self.red_apple },
+            yellow_apple: Apple { frame, ..self.yellow_apple },
+            snake: Snake { frame, ..self.snake },
             ..self
         }
     }
@@ -112,11 +117,11 @@ impl App {
         }
 
         if Some(AppleType::Red) == apple_eaten {
-            result.red_apple = Apple::new(&self.field, 1, 1, AppleType::Red, self.frame);
+            result.red_apple = Apple::new(1, 1, AppleType::Red, self.frame);
         }
 
         if Some(AppleType::Yellow) == apple_eaten {
-            result.yellow_apple = Apple::new(&self.field, 2, 2, AppleType::Yellow, self.frame);
+            result.yellow_apple = Apple::new(2, 2, AppleType::Yellow, self.frame);
         }
 
         for (x,y) in &self.snake.body[1..] {
@@ -183,11 +188,11 @@ impl App {
     fn show_game_over_message<W: Write>(&self, stdout: &mut W) {
         let cp = CenteredPanel {
             content: Vec::from(GAME_OVER_SCREEN),
-            field: self.field                    
+            frame: self.frame                    
         };
 
         cp.render(stdout);
-        write!(stdout, "{}", cursor::Goto(1, self.field.1+4)).unwrap();
+        write!(stdout, "{}", cursor::Goto(1, self.frame.size.1+4)).unwrap();
     }
 
     fn wait_next_turn(&self, now: Instant, before: Instant) -> ControlFlow<()> {
@@ -212,7 +217,7 @@ impl App {
         let mut app = App::new(easy_mode);
         let mut before = Instant::now();
         loop {
-            app = app.update_field_size();
+            app = app.update_frame_size();
   
             let now = Instant::now();
 
@@ -224,11 +229,11 @@ impl App {
 
             app = app.react_to_command(App::input_cmd(stdin));
 
-            app.snake = app.snake.mv(&app.field);
+            app.snake = app.snake.mv();
             app = app.check_collision();
             app.render(stdout);
 
-            if app.quit && confirm_quit(stdin, stdout, app.field) {
+            if app.quit && confirm_quit(stdin, stdout, app.frame) {
                 break;
             } else {
                 app.quit = false;

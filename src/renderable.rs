@@ -6,7 +6,7 @@ use termion::{
 };
 use crate::io::wait_char;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 pub(crate) struct Frame {
     pub(crate) pos: (u16, u16),
     pub(crate) size: (u16, u16)
@@ -33,6 +33,21 @@ impl Frame {
         let (_x, _y) = self.pos;
         return cursor::Goto(_x + x, _y + y)
     }
+
+    pub(crate) fn field(&self) -> (u16, u16) {
+        let (x, y) = self.pos;
+        let (w, h) = self.size;
+        
+        (w - x - 1, h - y - 1)
+    }
+
+    pub(crate) fn random_point(&self) -> (u16, u16) {
+        let (w, h) = self.field();
+        let x: u16 = rand::random::<u16>() % w + 1;
+        let y: u16 = rand::random::<u16>() % h + 1;
+
+        (x, y)
+    }
 }
 
 
@@ -43,14 +58,14 @@ pub(crate) trait Renderable {
 #[derive(Clone)]
 pub(crate) struct CenteredPanel<'a> {
     pub(crate) content: Vec<&'a str>,
-    pub(crate) field: (u16, u16)
+    pub(crate) frame: Frame
 }
 
 impl Renderable for CenteredPanel<'_> {
     fn render<W:Write>(&self, stdout: &mut W) {
-        let mut row = (self.field.1 - self.content.len() as u16) / 2;
+        let mut row = (self.frame.size.1 - self.content.len() as u16) / 2;
         for line in &self.content {
-            let col = (self.field.0 - line.chars().count() as u16) / 2;
+            let col = (self.frame.size.0 - line.chars().count() as u16) / 2;
             write!(stdout, "{}{}", cursor::Goto(col, row), line).unwrap();
             row += 1;
         }
@@ -101,10 +116,10 @@ impl Renderable for InfoPanel {
     }
 }
 
-pub(crate) fn confirm_quit<W:Write>(stdin: &mut AsyncReader, stdout: &mut W, field:(u16, u16)) -> bool {
+pub(crate) fn confirm_quit<W:Write>(stdin: &mut AsyncReader, stdout: &mut W, frame: Frame) -> bool {
     let confirm_dialog = CenteredPanel {
         content: Vec::from(CONFIRM_QUIT_SCREEN),
-        field: field
+        frame
     };
 
     confirm_dialog.render(stdout);
