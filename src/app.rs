@@ -57,8 +57,8 @@ impl App {
         let frame = Frame { pos:(1,1), size: (78,23) };
         let result = App {
             frame: frame,
-            red_apple: Apple { x:1, y:1, points: 1, inc_speed: 1, apple_type: AppleType::Red, frame: frame },
-            yellow_apple: Apple { x:10, y:10, points: 2, inc_speed: 2, apple_type: AppleType::Yellow, frame: frame },
+            red_apple: Apple { pos:frame.random_point(), points: 1, inc_speed: 1, apple_type: AppleType::Red, frame: frame },
+            yellow_apple: Apple { pos:frame.random_point(), points: 2, inc_speed: 2, apple_type: AppleType::Yellow, frame: frame },
             snake: Snake { body: vec![(3,1),(2,1),(1,1)], dir: (1,0), frame },
             speed: 10,
             score: 0,
@@ -81,8 +81,8 @@ impl App {
 
         App {
             frame,
-            red_apple: Apple { frame, ..self.red_apple },
-            yellow_apple: Apple { frame, ..self.yellow_apple },
+            red_apple: Apple { pos:frame.random_point(), frame, ..self.red_apple },
+            yellow_apple: Apple { pos:frame.random_point(), ..self.yellow_apple },
             snake: Snake { frame, ..self.snake },
             ..self
         }
@@ -108,7 +108,7 @@ impl App {
         let mut apple_eaten: Option<AppleType> = None;
 
         for apple in [&self.red_apple,&self.yellow_apple].iter() {
-            if head_pos.0 == apple.x && head_pos.1 == apple.y {
+            if head_pos.0 == apple.pos.0 && head_pos.1 == apple.pos.1 {
                 result.snake = self.snake.grow(apple.points as u16);
                 result.speed += apple.inc_speed;
                 result.score += apple.points;
