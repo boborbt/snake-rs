@@ -50,15 +50,18 @@ fn main() {
 
     
     loop {
-        let difficulty = match menu::run(&mut stdin, &mut stdout, score_board) {
+        let menu_choice = menu::run(&mut stdin, &mut stdout, score_board);
+        let choice = match menu_choice {
                 MainMenuChoice::Quit => None,
-                MainMenuChoice::EasyMode => { Some(Difficulty::Easy) },
-                MainMenuChoice::HardMode => { Some(Difficulty::Hard) },                    
+                MainMenuChoice::EasyMode => Some((Difficulty::Easy, None)) ,
+                MainMenuChoice::HardMode => Some((Difficulty::Hard, None)) ,
+                MainMenuChoice::EasyMode80x25 => Some((Difficulty::Easy, Some((80,25)))),
+                MainMenuChoice::HardMode80x25 => Some((Difficulty::Hard, Some((80,25))))
             };
             
-        if let Some(difficulty) = difficulty {
-            let score = App::run(&mut stdin, &mut stdout, difficulty == Difficulty::Easy);
-            score_board = score_board.update(score, difficulty);
+        if let Some((difficulty, size)) = choice {
+            let score = App::run(&mut stdin, &mut stdout, difficulty == Difficulty::Easy, size);
+            score_board = score_board.update(score, menu_choice);
         } else {
             break;
         }
