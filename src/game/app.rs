@@ -1,10 +1,5 @@
 use crate::{
     menu::Difficulty,
-    game::gameobjs::{
-        Apple,
-        AppleType,
-        Snake
-    },
     io::wait_char,
     io::renderable::{
         Renderable,
@@ -13,7 +8,9 @@ use crate::{
         GAME_OVER_SCREEN,
         confirm_quit,
         Frame
-    }
+    },
+    game::apple::{Apple, AppleType},
+    game::snake::Snake
 };
 
 use termion::{
