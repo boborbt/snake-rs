@@ -218,9 +218,9 @@ impl App {
 
         if dt < interval {
             sleep(Duration::from_millis(interval - dt));
-            return ControlFlow::Break(());
+            return ControlFlow::Continue(());
         }
-        ControlFlow::Continue(())
+        ControlFlow::Break(())
     }
 
     pub(crate) fn run<W:Write>(stdin: &mut AsyncReader, stdout: &mut W, easy_mode: bool, size: Option<(u16, u16)>) -> u64 {
@@ -231,7 +231,7 @@ impl App {
   
             let now = Instant::now();
 
-            if let ControlFlow::Break(_) = app.wait_next_turn(now, before) {
+            if let ControlFlow::Continue(_) = app.wait_next_turn(now, before) {
                 continue;
             }
 
