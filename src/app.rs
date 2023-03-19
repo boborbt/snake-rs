@@ -1,4 +1,5 @@
 use crate::{
+    menu::Difficulty,
     gameobjs::{
         Apple,
         AppleType,
@@ -49,17 +50,14 @@ pub(crate) struct App {
     score: u64,
     game_over: bool,
     quit: bool,
-    easy_mode: bool,
-    fixed_size: bool
+    difficulty: Difficulty,
+    size: Option<(u16, u16)>
 }
 
 impl App {
-    fn new(easy_mode: bool, size:Option<(u16, u16)>) -> App {
-        let frame = match size {
-            Some(size) => Frame { pos:(1,1), size },
-            None => Frame { pos:(1,1), size: (78,23) }
-        }
-        ;
+    fn new(difficulty: Difficulty, size:Option<(u16, u16)>) -> App {
+        let frame = Frame { pos:(1,1), size: (78,23) };
+
         let result = App {
             frame: frame,
             red_apple: Apple { pos:frame.random_point(), points: 1, inc_speed: 1, apple_type: AppleType::Red, frame: frame },
@@ -69,15 +67,15 @@ impl App {
             score: 0,
             game_over: false,
             quit: false,
-            easy_mode: easy_mode,
-            fixed_size: size.is_some()
+            difficulty,
+            size
         };
 
         result.update_frame_size()
     }
 
     fn update_frame_size(self) -> App {
-        if self.fixed_size {
+        if self.size.is_some() {
             return self;
         }
 
@@ -186,7 +184,7 @@ impl App {
             return result;
         }
 
-        if !self.easy_mode {
+        if self.difficulty == Difficulty::Hard {
             result.snake.dir = newdir;
         } else if newdir.0 != -self.snake.dir.0 && newdir.1 != -self.snake.dir.1 {
             result.snake.dir = newdir;
@@ -223,8 +221,8 @@ impl App {
         ControlFlow::Break(())
     }
 
-    pub(crate) fn run<W:Write>(stdin: &mut AsyncReader, stdout: &mut W, easy_mode: bool, size: Option<(u16, u16)>) -> u64 {
-        let mut app = App::new(easy_mode, size);
+    pub(crate) fn run<W:Write>(stdin: &mut AsyncReader, stdout: &mut W, difficulty: Difficulty, size: Option<(u16, u16)>) -> u64 {
+        let mut app = App::new(difficulty, size);
         let mut before = Instant::now();
         loop {
             app = app.update_frame_size();

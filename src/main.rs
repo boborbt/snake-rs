@@ -32,10 +32,11 @@ use std::{
     io::{ stdout, Write }
 };
 
-use crate::app::App;
-use crate::menu::MainMenuChoice;
-use crate::scores::{ScoreBoard, Difficulty};
-
+use crate::{
+    app::App,
+    menu::MenuAction,
+    scores::ScoreBoard
+};
 
 fn main() {
 
@@ -50,22 +51,16 @@ fn main() {
 
     
     loop {
-        let menu_choice = menu::run(&mut stdin, &mut stdout, score_board);
-        let choice = match menu_choice {
-                MainMenuChoice::Quit => None,
-                MainMenuChoice::EasyMode => Some((Difficulty::Easy, None)) ,
-                MainMenuChoice::HardMode => Some((Difficulty::Hard, None)) ,
-                MainMenuChoice::EasyMode80x25 => Some((Difficulty::Easy, Some((80,25)))),
-                MainMenuChoice::HardMode80x25 => Some((Difficulty::Hard, Some((80,25))))
-            };
-            
-        if let Some((difficulty, size)) = choice {
-            let score = App::run(&mut stdin, &mut stdout, difficulty == Difficulty::Easy, size);
-            score_board = score_board.update(score, menu_choice);
-            score_board.save();
-        } else {
+        let choice = menu::run(&mut stdin, &mut stdout, score_board);
+        if choice == MenuAction::Quit {
             break;
         }
+
+        if let MenuAction::StartGame(difficulty, size) = choice {
+            let score = App::run(&mut stdin, &mut stdout, difficulty, size);
+            score_board = score_board.update(score, choice);
+            score_board.save();
+        } 
     }
     write!(stdout, "{}", cursor::Show).unwrap();
 }

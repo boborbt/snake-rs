@@ -11,32 +11,46 @@ use crate::renderable::{
 };
 
 use crate::io::wait_char;
-
 use crate::scores::ScoreBoard;
 
+#[derive(Copy, Clone, PartialEq, Serialize, Deserialize)]
+pub(crate) enum Difficulty {
+    Easy,
+    Hard
+}
+
 #[derive(Clone, Copy, PartialEq, Serialize, Deserialize)]
-pub(crate) enum MainMenuChoice {
-    EasyMode,
-    HardMode,
-    EasyMode80x25,
-    HardMode80x25,
+pub(crate) enum MenuAction {
+    StartGame(Difficulty, Option<(u16, u16)>),
     Quit
 }
 
-impl ToString for MainMenuChoice {
+impl ToString for Difficulty {
     fn to_string(&self) -> String {
         match self {
-            MainMenuChoice::EasyMode => "Easy Mode".to_string(),
-            MainMenuChoice::HardMode => "Hard Mode".to_string(),
-            MainMenuChoice::EasyMode80x25 => "Easy Mode 80x25".to_string(),
-            MainMenuChoice::HardMode80x25 => "Hard Mode 80x25".to_string(),
-            MainMenuChoice::Quit => "Quit".to_string()
+            Difficulty::Easy => "Easy".to_string(),
+            Difficulty::Hard => "Hard".to_string()
+        }
+    }
+}
+
+impl ToString for MenuAction {
+    fn to_string(&self) -> String {
+        match self {
+            MenuAction::StartGame(difficulty, size) => {
+                let size = match size {
+                    Some((w,h)) => format!("{}x{}", w, h),
+                    None => "Full".to_string()
+                };
+                format!("Start {} mode ({})", difficulty.to_string(), size)
+            },
+            MenuAction::Quit => "Quit".to_string()
         }
     }
 }
 
 
-pub(crate) fn run<W:Write>(stdin:&mut AsyncReader, stdout:&mut W, score_board: ScoreBoard) -> MainMenuChoice {
+pub(crate) fn run<W:Write>(stdin:&mut AsyncReader, stdout:&mut W, score_board: ScoreBoard) -> MenuAction {
     let panel = CenteredPanel {
         content: MAIN_MENU_SCREEN.to_vec(),
         frame: Frame::new((1,1), terminal_size().unwrap())
@@ -53,19 +67,19 @@ pub(crate) fn run<W:Write>(stdin:&mut AsyncReader, stdout:&mut W, score_board: S
 
         match char {
             b'1' => {
-                return MainMenuChoice::EasyMode;
+                return MenuAction::StartGame(Difficulty::Easy, None);
             },
             b'2' => {
-                return MainMenuChoice::HardMode;
+                return MenuAction::StartGame(Difficulty::Hard, None)
             },
             b'3' => {
-                return MainMenuChoice::EasyMode80x25;
+                return MenuAction::StartGame(Difficulty::Easy, Some((80,25)));
             },
             b'4' => {
-                return MainMenuChoice::HardMode80x25;
+                return MenuAction::StartGame(Difficulty::Hard, Some((80,25)));
             },
             b'q' => {
-                return MainMenuChoice::Quit;
+                return MenuAction::Quit;
             },
             _ => ()
         }
