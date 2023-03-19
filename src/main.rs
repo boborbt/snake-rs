@@ -14,12 +14,12 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-mod gameobjs;
-mod renderable;
-mod app;
+mod game;
 mod menu;
-mod scores;
 mod io;
+
+use menu::MenuAction;
+use game::app::App;
 
 use termion::{
     raw::IntoRawMode,
@@ -32,18 +32,13 @@ use std::{
     io::{ stdout, Write }
 };
 
-use crate::{
-    app::App,
-    menu::MenuAction,
-    scores::ScoreBoard
-};
 
 fn main() {
 
     let stdout = stdout();
     let mut stdin = async_stdin();
     let mut stdout = stdout.lock().into_raw_mode().unwrap();
-    let mut score_board = ScoreBoard::load();
+    let mut score_board = game::scores::ScoreBoard::load();
 
 
     stdout.activate_raw_mode().unwrap();

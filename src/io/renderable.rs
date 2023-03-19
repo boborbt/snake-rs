@@ -6,6 +6,10 @@ use termion::{
 };
 use crate::io::wait_char;
 
+pub(crate) trait Renderable {
+    fn render<W: Write>(&self, stdout: &mut W);
+}
+
 #[derive(Clone, Copy, PartialEq)]
 pub(crate) struct Frame {
     pub(crate) pos: (u16, u16),
@@ -51,9 +55,7 @@ impl Frame {
 }
 
 
-pub(crate) trait Renderable {
-    fn render<W: Write>(&self, stdout: &mut W);
-}
+
 
 #[derive(Clone)]
 pub(crate) struct CenteredPanel<'a> {

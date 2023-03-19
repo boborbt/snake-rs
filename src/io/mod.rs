@@ -1,7 +1,10 @@
+
 use std::io::{Read};
 use termion::AsyncReader;
 use std::thread;
 use std::time::Duration;
+
+pub(crate) mod renderable;
 
 pub(crate) fn wait_char(reader: &mut AsyncReader) -> u8 {
     loop {

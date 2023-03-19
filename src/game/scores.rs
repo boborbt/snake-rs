@@ -1,6 +1,6 @@
 use termion::{color, terminal_size, cursor};
 use std::io::{Read, Write};
-use crate::{renderable::Renderable, menu::{MenuAction, Difficulty}};
+use crate::{menu::{MenuAction, Difficulty}, io::renderable::Renderable};
 use serde::{Deserialize, Serialize};
 
 

@@ -1,4 +1,4 @@
-use crate::renderable::{ Renderable, Frame };
+use crate::io::renderable::{ Renderable, Frame };
 use std::io::Write;
 
 
@@ -6,6 +6,7 @@ use termion::{
     color
 };
 
+// -------------- Apple -------------- 
 
 #[derive(Clone,PartialEq)]
 pub(crate) enum AppleType {
@@ -44,6 +45,8 @@ impl Apple {
     }
 }
 
+
+// -------------- Snake --------------
 #[derive(Clone)]
 pub(crate) struct Snake {
     pub(crate) body: Vec<(u16, u16)>,

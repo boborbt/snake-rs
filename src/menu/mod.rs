@@ -3,7 +3,7 @@ use serde::{ Serialize, Deserialize };
 
 use termion::{ AsyncReader, terminal_size, cursor, clear };
 
-use crate::renderable::{
+use crate::io::renderable::{
     Frame,
     Renderable,
     CenteredPanel,
@@ -11,18 +11,12 @@ use crate::renderable::{
 };
 
 use crate::io::wait_char;
-use crate::scores::ScoreBoard;
+use crate::game::scores::ScoreBoard;
 
 #[derive(Copy, Clone, PartialEq, Serialize, Deserialize)]
 pub(crate) enum Difficulty {
     Easy,
     Hard
-}
-
-#[derive(Clone, Copy, PartialEq, Serialize, Deserialize)]
-pub(crate) enum MenuAction {
-    StartGame(Difficulty, Option<(u16, u16)>),
-    Quit
 }
 
 impl ToString for Difficulty {
@@ -33,6 +27,14 @@ impl ToString for Difficulty {
         }
     }
 }
+
+#[derive(Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub(crate) enum MenuAction {
+    StartGame(Difficulty, Option<(u16, u16)>),
+    Quit
+}
+
+
 
 impl ToString for MenuAction {
     fn to_string(&self) -> String {

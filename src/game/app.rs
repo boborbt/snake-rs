@@ -1,12 +1,12 @@
 use crate::{
     menu::Difficulty,
-    gameobjs::{
+    game::gameobjs::{
         Apple,
         AppleType,
         Snake
     },
     io::wait_char,
-    renderable::{
+    io::renderable::{
         Renderable,
         InfoPanel,
         CenteredPanel,
@@ -29,6 +29,8 @@ use std::{
     time::{ Instant, Duration },
     thread::sleep
 };
+
+// -------------- Data types -------------- 
 
 enum Command {
     Up,
@@ -53,6 +55,8 @@ pub(crate) struct App {
     difficulty: Difficulty,
     size: Option<(u16, u16)>
 }
+
+// -------------- App impl --------------
 
 impl App {
     fn new(difficulty: Difficulty, size:Option<(u16, u16)>) -> App {
