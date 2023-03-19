@@ -47,15 +47,14 @@ fn main() {
     
     loop {
         let choice = menu::run(&mut stdin, &mut stdout, score_board);
-        if choice == MenuAction::Quit {
-            break;
+        match choice {
+            MenuAction::Quit => break,
+            MenuAction::StartGame(difficulty, size) => {
+                let score = App::run(&mut stdin, &mut stdout, difficulty, size);
+                score_board = score_board.update(score, choice);
+                score_board.save();
+            }
         }
-
-        if let MenuAction::StartGame(difficulty, size) = choice {
-            let score = App::run(&mut stdin, &mut stdout, difficulty, size);
-            score_board = score_board.update(score, choice);
-            score_board.save();
-        } 
     }
     write!(stdout, "{}", cursor::Show).unwrap();
 }
