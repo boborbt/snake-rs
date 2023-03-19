@@ -1,33 +1,13 @@
+use termion::{ clear, cursor, terminal_size, AsyncReader };
+use core::ops::ControlFlow;
+use std::{ io::{ Read, Write }, time::{ Instant, Duration }, thread::sleep };
 use crate::{
     menu::Difficulty,
     io::wait_char,
-    io::renderable::{
-        Renderable,
-        InfoPanel,
-        CenteredPanel,
-        GAME_OVER_SCREEN,
-        confirm_quit,
-        Frame
-    },
+    io::renderable::*,
     game::apple::{Apple, AppleType},
     game::snake::Snake
 };
-
-use termion::{
-    clear,
-    cursor,
-    terminal_size, 
-    AsyncReader
-};
-
-use core::ops::ControlFlow;
-use std::{
-    io::{ Read, Write },
-    time::{ Instant, Duration },
-    thread::sleep
-};
-
-// -------------- Data types -------------- 
 
 enum Command {
     Up,
@@ -37,7 +17,6 @@ enum Command {
     Quit,
     None
 }
-
 
 #[derive(Clone)]
 pub(crate) struct App {
